@@ -1,5 +1,4 @@
-// main.cpp - interactive front-end (raylib). All the "thinking" lives in
-// algorithms.hpp; this file only handles input, timing and drawing.
+
 
 #include "raylib.h"
 
@@ -14,7 +13,6 @@
 
 namespace {
 
-// ----- layout (grid dimensions must be odd for the maze generator) ---------
 constexpr int kRows   = 31;
 constexpr int kCols   = 45;
 constexpr int kCellPx = 22;
@@ -24,12 +22,11 @@ constexpr int kPanelW = 290;
 constexpr int kWinW   = kGridW + kPanelW;
 constexpr int kWinH   = kGridH;
 
-// Search speed levels, in expansions per second.
 constexpr int kSpeeds[]   = {5, 10, 20, 40, 80, 160, 320, 640, 1280, 2560};
 constexpr int kSpeedCount = static_cast<int>(sizeof(kSpeeds) / sizeof(kSpeeds[0]));
-constexpr double kPathNodesPerSecond = 120.0;   // speed of the final path animation
+constexpr double kPathNodesPerSecond = 120.0;  
 
-// ----- colors ---------------------------------------------------------------
+
 const Color kPanelBg    = {28, 32, 44, 255};
 const Color kCellEmpty  = {236, 239, 244, 255};
 const Color kGridLine   = {206, 212, 222, 255};
@@ -43,7 +40,7 @@ const Color kGoal       = {230, 60, 70, 255};
 const Color kText       = {232, 236, 244, 255};
 const Color kTextDim    = {150, 158, 176, 255};
 
-// Immediate-mode button: draws itself, returns true on the frame it is clicked.
+
 bool Button(Rectangle r, const char* label, bool active = false) {
     const bool hover = CheckCollisionPointRec(GetMousePosition(), r);
     Color bg = active ? Color{70, 110, 200, 255}
@@ -60,7 +57,7 @@ bool Button(Rectangle r, const char* label, bool active = false) {
 class Visualizer {
 public:
     Visualizer() : grid_(kRows, kCols), rng_(std::random_device{}()) {
-        selectAlgorithm(3);   // start with A*
+        selectAlgorithm(3);  
     }
 
     void update() {
@@ -77,18 +74,18 @@ public:
     }
 
 private:
-    // ---------------------------------------------------------------- state
+
     Grid grid_;
     std::unique_ptr<Algorithm> algo_;
     int  algoIndex_   = 0;
     int  speedLevel_  = 4;
     bool running_     = false;
-    double stepAcc_   = 0.0;     // fractional expansions carried between frames
-    std::size_t revealed_ = 0;   // how much of the final path is already shown
+    double stepAcc_   = 0.0;   
+    std::size_t revealed_ = 0;   
     double revealAcc_ = 0.0;
     std::mt19937 rng_;
 
-    // -------------------------------------------------------------- control
+
     void selectAlgorithm(int index) {
         algoIndex_ = index;
         algo_ = makeAlgorithm(index);
@@ -104,7 +101,7 @@ private:
     }
 
     void toggleRun() {
-        if (algo_->finished()) resetSearch();   // run again from scratch
+        if (algo_->finished()) resetSearch();  
         running_ = !running_;
     }
 
@@ -114,7 +111,6 @@ private:
         algo_->step(grid_);
     }
 
-    // -------------------------------------------------------------- input
     void handleKeyboard() {
         if (IsKeyPressed(KEY_ONE))   selectAlgorithm(0);
         if (IsKeyPressed(KEY_TWO))   selectAlgorithm(1);
@@ -132,7 +128,6 @@ private:
         if (IsKeyPressed(KEY_M)) { generateMaze(grid_, rng_); resetSearch(); }
         if (IsKeyPressed(KEY_T)) { sprinkleSwamp(grid_, rng_); resetSearch(); }
 
-        // S / G: move the start / goal to the cell under the mouse.
         const int cell = cellUnderMouse();
         if (cell >= 0) {
             if (IsKeyPressed(KEY_S) && cell != grid_.goal)  moveEndpoint(grid_.start, cell);
@@ -141,12 +136,12 @@ private:
     }
 
     void moveEndpoint(int& endpoint, int cell) {
-        grid_.cells[cell] = Cell::Empty;   // an endpoint can't sit inside a wall
+        grid_.cells[cell] = Cell::Empty;   
         endpoint = cell;
         resetSearch();
     }
 
-    // Index of the grid cell under the mouse, or -1 if the mouse is elsewhere.
+
     int cellUnderMouse() const {
         const Vector2 m = GetMousePosition();
         const int x = static_cast<int>(m.x);
@@ -165,13 +160,12 @@ private:
         else if (IsMouseButtonDown(MOUSE_BUTTON_RIGHT)) wanted = Cell::Empty;
         else return;
 
-        if (grid_.cells[cell] != wanted) {   // editing the world invalidates the search
+        if (grid_.cells[cell] != wanted) {  
             grid_.cells[cell] = wanted;
             resetSearch();
         }
     }
 
-    // ---------------------------------------------------------- simulation
     void advanceSearch() {
         if (!running_) return;
 
@@ -197,7 +191,6 @@ private:
         }
     }
 
-    // ------------------------------------------------------------- drawing
     void drawGrid() const {
         for (int r = 0; r < kRows; ++r) {
             for (int c = 0; c < kCols; ++c) {
@@ -213,7 +206,6 @@ private:
                 DrawRectangle(x, y, kCellPx, kCellPx,
                               grid_.cells[i] == Cell::Swamp ? kSwamp : kCellEmpty);
 
-                // The search state is drawn translucently so swamp stays visible.
                 switch (grid_.states[i]) {
                     case State::InFrontier: DrawRectangle(x, y, kCellPx, kCellPx, Fade(kFrontier, 0.85f)); break;
                     case State::Visited:    DrawRectangle(x, y, kCellPx, kCellPx, Fade(kVisited, 0.75f));  break;
@@ -254,7 +246,6 @@ private:
         DrawText("Pathfinding", px, 14, 24, kText);
         DrawText("Visualizer", px, 40, 24, kText);
 
-        // Algorithm selection (2x2)
         DrawText("Algorithm", px, 78, 14, kTextDim);
         const char* names[kAlgorithmCount] = {"1  BFS", "2  DFS", "3  Dijkstra", "4  A*"};
         for (int i = 0; i < kAlgorithmCount; ++i) {
@@ -262,7 +253,6 @@ private:
             if (Button(r, names[i], i == algoIndex_)) selectAlgorithm(i);
         }
 
-        // Controls
         DrawText("Controls", px, 180, 14, kTextDim);
         if (Button({x1, 200, bw, bh}, running_ ? "Pause" : "Run  (Space)")) toggleRun();
         if (Button({x2, 200, bw, bh}, "Step  (N)"))        singleStep();
@@ -271,12 +261,12 @@ private:
         if (Button({x1, 276, bw, bh}, "Maze  (M)"))      { generateMaze(grid_, rng_); resetSearch(); }
         if (Button({x2, 276, bw, bh}, "Swamp  (T)"))     { sprinkleSwamp(grid_, rng_); resetSearch(); }
 
-        // Speed
+     
         DrawText(TextFormat("Speed: %d steps/s", kSpeeds[speedLevel_]), px, 322, 16, kText);
         if (Button({x1, 344, bw, 26}, "Slower (Down)")) speedLevel_ = std::max(speedLevel_ - 1, 0);
         if (Button({x2, 344, bw, 26}, "Faster (Up)"))   speedLevel_ = std::min(speedLevel_ + 1, kSpeedCount - 1);
 
-        // Stats
+        
         DrawText("Statistics", px, 388, 14, kTextDim);
         DrawText(TextFormat("Algorithm: %s", algo_->name()), px, 408, 16, kText);
         DrawText(TextFormat("Status: %s", statusText()),     px, 430, 16, kText);
@@ -286,7 +276,7 @@ private:
             DrawText(TextFormat("Path cost:  %d", algo_->pathCost()), px, 496, 16, kText);
         }
 
-        // Legend
+       
         legendItem(px,       528, kStart,    "Start");
         legendItem(px + 140, 528, kGoal,     "Goal");
         legendItem(px,       548, kWall,     "Wall");
@@ -295,13 +285,13 @@ private:
         legendItem(px + 140, 568, Fade(kVisited, 0.75f),  "Visited");
         legendItem(px,       588, kPathColor, "Path");
 
-        // Help
+     
         DrawText("LMB wall   Shift+LMB swamp   RMB erase", px, 614, 12, kTextDim);
         DrawText("S / G over a cell: move start / goal",   px, 630, 12, kTextDim);
     }
 };
 
-}  // namespace
+}  
 
 int main() {
     InitWindow(kWinW, kWinH, "Pathfinding Visualizer - BFS / DFS / Dijkstra / A*");
