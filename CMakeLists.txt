@@ -9,7 +9,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-# ---- raylib: use an installed copy if there is one, otherwise download it ----
+
 find_package(raylib 5.0 QUIET)
 if(NOT raylib_FOUND)
     include(FetchContent)
@@ -23,7 +23,6 @@ if(NOT raylib_FOUND)
     FetchContent_MakeAvailable(raylib)
 endif()
 
-# ---- the visualizer ----------------------------------------------------------
 add_executable(pathfinding_visualizer src/main.cpp)
 target_link_libraries(pathfinding_visualizer PRIVATE raylib)
 if(MSVC)
@@ -32,7 +31,6 @@ else()
     target_compile_options(pathfinding_visualizer PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
-# ---- headless tests (no raylib needed) ---------------------------------------
 enable_testing()
 add_executable(test_algorithms tests/test_algorithms.cpp)
 if(NOT MSVC)
