@@ -1,25 +1,21 @@
 #pragma once
-// grid.hpp - the world the algorithms search in.
-//
-// A node is just an int: index = row * cols + col. Using one flat vector
-// (instead of vector<vector<>>) keeps memory contiguous and makes it trivial
-// to store per-node data (parent, distance, ...) in parallel arrays.
+
 
 #include <cstdint>
 #include <vector>
 
 enum class Cell : std::uint8_t {
-    Empty,   // cost 1 to enter
-    Wall,    // impassable
-    Swamp    // cost kSwampCost to enter (makes weighted algorithms interesting)
+    Empty,   
+    Wall,
+    Swamp    
 };
 
-// What the *search* currently thinks about a node. Purely for visualization.
+
 enum class State : std::uint8_t {
     Unvisited,
-    InFrontier,  // discovered, waiting to be expanded
-    Visited,     // expanded (removed from the frontier)
-    Path         // part of the final path
+    InFrontier,  
+    Visited,     
+    Path         
 };
 
 constexpr int kSwampCost = 5;
@@ -49,7 +45,6 @@ struct Grid {
     }
     bool passable(int i) const { return cells[i] != Cell::Wall; }
 
-    // Cost of *entering* node i.
     int cost(int i) const { return cells[i] == Cell::Swamp ? kSwampCost : 1; }
 
     void resetEndpoints() {
@@ -57,12 +52,10 @@ struct Grid {
         goal  = idx(rows / 2, 3 * cols / 4);
     }
 
-    // Forget everything the search did, keep walls/terrain.
     void clearSearch() {
         for (auto& s : states) s = State::Unvisited;
     }
 
-    // Back to an empty board.
     void clearAll() {
         for (auto& c : cells) c = Cell::Empty;
         clearSearch();
@@ -70,8 +63,7 @@ struct Grid {
     }
 };
 
-// Calls f(neighborIndex) for each passable 4-neighbour of node `id`.
-// Order: up, right, down, left.
+
 template <class F>
 void forEachNeighbor(const Grid& g, int id, F&& f) {
     static constexpr int dr[4] = {-1, 0, 1, 0};
