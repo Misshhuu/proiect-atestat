@@ -1,11 +1,5 @@
 #pragma once
-// algorithms.hpp - BFS, DFS, Dijkstra and A*, written so that the UI can
-// advance them ONE EXPANSION AT A TIME.
-//
-// Design idea: the algorithm never draws anything and never sleeps. It keeps
-// all its state (frontier, parents, distances) in members, and step() performs
-// exactly one "pop a node from the frontier and expand it". The UI decides how
-// often to call step(), which gives pause / single-step / speed control for free.
+
 
 #include "grid.hpp"
 
@@ -16,15 +10,12 @@
 #include <queue>
 #include <vector>
 
-// ---------------------------------------------------------------------------
-// Common base: bookkeeping that every algorithm needs.
-// ---------------------------------------------------------------------------
+
 class Algorithm {
 public:
     virtual ~Algorithm() = default;
     virtual const char* name() const = 0;
 
-    // Prepare a fresh search on g (also wipes g.states).
     void reset(Grid& g) {
         g.clearSearch();
         parent_.assign(g.size(), -1);
@@ -36,7 +27,6 @@ public:
         onReset(g);
     }
 
-    // Do one expansion. Returns true while the search is still running.
     bool step(Grid& g) {
         if (finished_) return false;
         onStep(g);
@@ -47,14 +37,12 @@ public:
     bool found()    const { return found_; }
     int  visited()  const { return visited_; }
     int  pathCost() const { return pathCost_; }
-    // Nodes from start to goal (empty if no path). Number of moves = size()-1.
     const std::vector<int>& path() const { return path_; }
 
 protected:
     virtual void onReset(Grid& g) = 0;
     virtual void onStep(Grid& g)  = 0;
 
-    // Ends the search; if found, rebuilds the path by walking parent links.
     void finish(const Grid& g, bool found) {
         finished_ = true;
         found_    = found;
@@ -67,7 +55,7 @@ protected:
         for (std::size_t i = 1; i < path_.size(); ++i) pathCost_ += g.cost(path_[i]);
     }
 
-    std::vector<int> parent_;   // parent_[n] = node we came from, -1 = none
+    std::vector<int> parent_; 
     std::vector<int> path_;
     int  visited_  = 0;
     int  pathCost_ = 0;
@@ -75,11 +63,7 @@ protected:
     bool found_    = false;
 };
 
-// ---------------------------------------------------------------------------
-// BFS: FIFO queue. Finds the path with the FEWEST MOVES; ignores terrain cost.
-// A node is marked "in frontier" the moment it is queued (not when popped),
-// otherwise the same node could be queued many times.
-// ---------------------------------------------------------------------------
+
 class BFS final : public Algorithm {
 public:
     const char* name() const override { return "BFS"; }
@@ -112,12 +96,7 @@ private:
     std::queue<int> frontier_;
 };
 
-// ---------------------------------------------------------------------------
-// DFS: LIFO stack. Finds *a* path, usually a long winding one. Not optimal.
-// Here a node may sit on the stack several times; the LAST push wins (it is on
-// top), so we overwrite parent_ on every push and skip stale entries on pop.
-// This is what gives real depth-first behaviour.
-// ---------------------------------------------------------------------------
+
 class DFS final : public Algorithm {
 public:
     const char* name() const override { return "DFS"; }
@@ -130,7 +109,7 @@ protected:
     }
 
     void onStep(Grid& g) override {
-        // Drop entries whose node was already expanded via a later push.
+       
         while (!stack_.empty() && g.states[stack_.back()] == State::Visited)
             stack_.pop_back();
         if (stack_.empty()) { finish(g, false); return; }
@@ -153,18 +132,7 @@ private:
     std::vector<int> stack_;
 };
 
-// ---------------------------------------------------------------------------
-// Dijkstra and A* share one implementation: "best-first search" ordered by
-//     f(n) = g(n) + h(n)
-// where g = cheapest known cost from start, h = heuristic estimate to goal.
-//   Dijkstra: h(n) = 0                       -> explores in circles
-//   A*      : h(n) = Manhattan distance      -> is pulled towards the goal
-// Both find the cheapest path (A* only because Manhattan is admissible AND
-// consistent here: every step costs >= 1, so it never overestimates).
-//
-// std::priority_queue has no decrease-key, so when we find a cheaper route to
-// a node we push a new entry and later ignore the stale one ("lazy deletion").
-// ---------------------------------------------------------------------------
+
 class BestFirst : public Algorithm {
 protected:
     virtual int heuristic(const Grid& g, int node) const = 0;
@@ -191,7 +159,7 @@ protected:
         forEachNeighbor(g, cur, [&](int n) {
             if (g.states[n] == State::Visited) return;
             const int nd = dist_[cur] + g.cost(n);
-            if (nd < dist_[n]) {            // found a cheaper way to n
+            if (nd < dist_[n]) {           
                 dist_[n]   = nd;
                 parent_[n] = cur;
                 g.states[n] = State::InFrontier;
@@ -203,10 +171,9 @@ protected:
 private:
     struct Entry { int f; int g; int node; };
     struct Cmp {
-        // priority_queue is a max-heap, so "greater" means "popped later".
         bool operator()(const Entry& a, const Entry& b) const {
-            if (a.f != b.f) return a.f > b.f;   // smaller f first
-            return a.g < b.g;                   // tie: larger g (= closer to goal) first
+            if (a.f != b.f) return a.f > b.f;   
+            return a.g < b.g;                   
         }
     };
     using Queue = std::priority_queue<Entry, std::vector<Entry>, Cmp>;
@@ -232,7 +199,6 @@ protected:
     }
 };
 
-// ---------------------------------------------------------------------------
 inline constexpr int kAlgorithmCount = 4;
 
 inline std::unique_ptr<Algorithm> makeAlgorithm(int index) {
