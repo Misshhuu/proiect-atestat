@@ -1,13 +1,4 @@
-// Headless tests: no window, no raylib. They check the four algorithms against
-// an independent reference implementation on thousands of random grids.
-//
-// What is verified:
-//   * all algorithms agree on whether a path exists
-//   * BFS returns a path with the minimum NUMBER OF MOVES
-//   * Dijkstra and A* return a path with the minimum TOTAL COST
-//   * DFS returns a valid path (not necessarily short)
-//   * every returned path is valid: starts at start, ends at goal, only steps
-//     between adjacent passable cells, and reported cost matches the cells
+
 
 #include "../src/algorithms.hpp"
 #include "../src/grid.hpp"
@@ -31,8 +22,7 @@ int g_failures = 0;
         }                                                                         \
     } while (0)
 
-// Reference #1: plain O(V^2) Dijkstra, written independently from the real code.
-// Returns cheapest cost, or -1 if unreachable.
+
 int referenceCost(const Grid& g) {
     const int n = g.size();
     std::vector<int>  dist(n, INT_MAX);
@@ -51,7 +41,7 @@ int referenceCost(const Grid& g) {
     return dist[g.goal] == INT_MAX ? -1 : dist[g.goal];
 }
 
-// Reference #2: minimum number of moves ignoring terrain (plain BFS levels).
+
 int referenceMoves(const Grid& g) {
     std::vector<int> d(g.size(), -1);
     std::vector<int> q{g.start};
@@ -69,7 +59,7 @@ bool adjacent(const Grid& g, int a, int b) {
     return std::abs(g.rowOf(a) - g.rowOf(b)) + std::abs(g.colOf(a) - g.colOf(b)) == 1;
 }
 
-// Runs an algorithm to completion on a copy of the grid.
+
 struct Outcome {
     bool found = false;
     int  moves = -1;
@@ -147,7 +137,7 @@ void testOne(const Grid& g, long long& astarVisited, long long& dijkVisited, int
     dijkVisited  += dij.visited;
 }
 
-}  // namespace
+}  
 
 int main() {
     std::mt19937 rng(12345);
@@ -158,7 +148,6 @@ int main() {
     for (int t = 0; t < kRandomTests; ++t)
         testOne(randomGrid(rng), astarVisited, dijkVisited, reachable);
 
-    // Mazes (with loops) and swamp, using the generators from the real app.
     for (int t = 0; t < 200; ++t) {
         Grid g(31, 45);
         generateMaze(g, rng);
@@ -166,7 +155,6 @@ int main() {
         testOne(g, astarVisited, dijkVisited, reachable);
     }
 
-    // start == goal edge case
     {
         Grid g(5, 5);
         g.goal = g.start;
